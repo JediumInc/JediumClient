@@ -1,17 +1,23 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Jedium.Behaviours;
+using Jedium.LocalBehaviours;
+using JediumCore;
 using UnityEngine;
 
-public class OpenCrate : MonoBehaviour
+public class OpenCrate : JediumLocalBehaviour
 {
-    private Animator _crate;
+    private JediumAnimatorBehaviour _crate;
 
     private bool open = false;
 	// Use this for initialization
-	void Start ()
-	{
-	    _crate = GetComponent<Animator>();
-	}
+    public override void Init(ClientGameObject jgo)
+    {
+        base.Init(jgo);
+        _crate = GetComponent<JediumAnimatorBehaviour>();
+    }
+
+
 
     void OnMouseOver()
     {
