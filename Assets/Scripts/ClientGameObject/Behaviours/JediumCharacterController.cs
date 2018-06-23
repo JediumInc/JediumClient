@@ -29,6 +29,8 @@ namespace Jedium.Behaviours
         {
             base.Init(snapshot);
             _walkBeh = GetComponent<JediumCharacterAnimator>();
+
+           
             if (Test.Instance._clientId == _parent.OwnerId)
             {
             //    JediumTransformBehaviour trans = GetComponent<JediumTransformBehaviour>();
@@ -80,7 +82,7 @@ namespace Jedium.Behaviours
             {
                 if (Mathf.Abs(_lastV - v) > 0.1f || Mathf.Abs(_lastH - h) > 0.1f || _lastJump != jump)
                 {
-                  
+                 
                     JediumCharacterControllerMessage msg = new JediumCharacterControllerMessage(v, h, jump);
                     _updater.AddUpdate(msg);
                 }

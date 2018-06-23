@@ -29,7 +29,7 @@ namespace JediumCore
 
         public static Test Instance;
 
-        public IConnection MainServer;
+        public ConnectionRef MainServer;
         private IClientConnection _mainClient;
         private ISceneActor _scene;
         public ActorSystem AkkaSystem;
@@ -37,13 +37,14 @@ namespace JediumCore
 
 
         public Guid _clientId;
+        public Guid UserId = Guid.Empty;
 
         public string Username;
         public string Password;
 
         private bool allowQuit = false;
 
-        public string behavioursPath = @"G:\work\JediumV2\Client2\BehaviourLoadTest";
+        public string behavioursPath = @"..\BehaviourLoadTest";
 
 
         //avatars
@@ -53,8 +54,9 @@ namespace JediumCore
 
         public Dictionary<Guid, ClientGameObject> _otherAvatars;
 
-
-        string _localUrl = "akka.tcp://VirtualFramework@localhost:18095/user/ServerEndpoint";
+        //
+        // string _localUrl = "akka.tcp://VirtualFramework@expovirtual.ru:18095/user/ServerEndpoint";
+      //  string _localUrl = "akka.tcp://VirtualFramework@localhost:18095/user/ServerEndpoint";
         // Use this for initialization
 
         void Awake()
@@ -75,8 +77,15 @@ namespace JediumCore
 
             //load behaviours
 
-            if(Directory.Exists(behavioursPath))
-            BehaviourManager.LoadBehaviours(behavioursPath);
+          //  if (Directory.Exists(Path.Combine(Application.dataPath,behavioursPath)))
+          //  {
+          //      BehaviourManager.LoadBehaviours(Path.Combine(Application.dataPath, behavioursPath));
+          //
+          //  }
+          //  else
+          //  {
+          //      _log.Info($"Path {Path.Combine(Application.dataPath, behavioursPath)} not exists, skipping assembly loading");
+          //  }
 
 
 
@@ -99,7 +108,7 @@ namespace JediumCore
                  remote{
                     helios.tcp{
                             transport-class = ""Akka.Remote.Transport.Helios.HeliosTcpTransport, Akka.Remote""
-                        port =0
+                        port =18098
 
                         hostname=localhost
                         }
@@ -168,7 +177,7 @@ namespace JediumCore
             try
             {
                 IActorRef asel =
-                    AkkaSystem.ActorSelection(_localUrl)
+                    AkkaSystem.ActorSelection(MainSettings.ServerUrl)
                         .ResolveOne(TimeSpan.Zero).Result;
 
                 MainServer = asel.Cast<ConnectionRef>();
@@ -181,6 +190,8 @@ namespace JediumCore
                         () => { MainUI.Instance.ShowLoginWindow(Username,Password); });
                     return;
                 }
+
+                UserId = loginInfo.Item3._loggedInUserId;
 
                 foreach (var atype in loginInfo.Item3.AdditionalRegisteredBehaviours)
                 {
@@ -209,12 +220,12 @@ namespace JediumCore
             }
 
             //start updates
-            if (MainSettings.UseUpdateThread)
-            {
-                _updateInterval = MainSettings.UpdateThreadInterval;
-                _updateThread = new Thread(this.TickUpdaters);
-                _updateThread.Start();
-            }
+           //if (MainSettings.UseUpdateThread)
+           //{
+           //    _updateInterval = MainSettings.UpdateThreadInterval;
+           //    _updateThread = new Thread(this.TickUpdaters);
+           //    _updateThread.Start();
+           //}
         }
             
 
@@ -253,10 +264,15 @@ namespace JediumCore
             _doUpdates = false;
 
             //Клиент: запрос на выход
-            if (MainServer != null)
+            if (MainServer != null&&UserId!=Guid.Empty)
             {
                 _log.Info("Unregistering client");
-                MainServer.DoLogout(_clientId).Wait();
+              //  MainServer.DoLogout(_clientId,UserId).Wait();
+                MainServer.CastToIActorRef().Tell(new LogoutMessage()
+                {
+                    ClientId =_clientId,
+                    UserId = this.UserId
+                },null);
 
                 _log.Info("Shutting down connection");
                 _mainClient.KillConnection().Wait();
@@ -276,11 +292,11 @@ namespace JediumCore
 
         private List<ClientGameObjectUpdater> _updaters;
 
-        private Thread _updateThread;
-
-        private Stopwatch _updateWatch;
-
-        private long _updateInterval; //cache it
+      // private Thread _updateThread;
+      //
+      // private Stopwatch _updateWatch;
+      //
+      // private long _updateInterval; //cache it
 
         public void RegisterUpdater(ClientGameObjectUpdater upd)
         {
@@ -293,32 +309,32 @@ namespace JediumCore
             }
         }
 
-        void TickUpdaters()
-        {
-            _updateWatch=new Stopwatch();
-
-            _updateWatch.Start();
-
-            while (_doUpdates)
-            {
-
-                if (_updateWatch.ElapsedMilliseconds > _updateInterval)
-                {
-                   
-
-                    if (_updaters != null)
-                    {
-                        for (int i = 0; i < _updaters.Count; i++)
-                            _updaters[i].SendMessages();
-                    }
-
-                    _updateWatch.Restart();
-                }
-
-
-
-            }
-        }
+    // void TickUpdaters()
+    // {
+    //     _updateWatch=new Stopwatch();
+    //
+    //     _updateWatch.Start();
+    //
+    //     while (_doUpdates)
+    //     {
+    //
+    //         if (_updateWatch.ElapsedMilliseconds > _updateInterval)
+    //         {
+    //            
+    //
+    //             if (_updaters != null)
+    //             {
+    //                 for (int i = 0; i < _updaters.Count; i++)
+    //                     _updaters[i].SendMessages();
+    //             }
+    //
+    //             _updateWatch.Restart();
+    //         }
+    //
+    //
+    //
+    //     }
+    // }
 
         #endregion
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Syrinj;
 using UnityEngine;
 
 namespace Jedium.Behaviours.CharacterController
@@ -22,6 +23,7 @@ namespace Jedium.Behaviours.CharacterController
 
         private Rigidbody rBody;
         private ThirdPersonOrbitCamBasic camScript; // Reference to the third person camera script.
+       
         public Transform playerCamera; // Reference to the camera that focus the player.
         private Animator unityAnim;
 
@@ -66,6 +68,7 @@ namespace Jedium.Behaviours.CharacterController
             colExtents = GetComponent<Collider>().bounds.extents;
             if (_isOwner)
             {
+               
                 playerCamera = Camera.main.transform;
                 rBody = GetComponent<Rigidbody>();
                 camScript = playerCamera.GetComponent<ThirdPersonOrbitCamBasic>();

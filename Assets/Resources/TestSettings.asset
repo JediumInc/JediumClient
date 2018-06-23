@@ -11,9 +11,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dab188578310bd04a9ee75aa022f9c71, type: 3}
   m_Name: TestSettings
   m_EditorClassIdentifier: 
-  UpdateRate: 0.01
+  UpdateRate: 1
   UseFixedUpdate: 0
   UseUpdateThread: 1
   UpdateThreadInterval: 2
   WebApiUrl: http://localhost:9080/api/
+  ServerUrl: akka.tcp://VirtualFramework@localhost:18095/user/ServerEndpoint
   InitialScene: 0b5fd70d-a95b-4e0f-b518-17b1e67e73d7

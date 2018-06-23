@@ -79,7 +79,7 @@ namespace Jedium.Behaviours
         public override bool ProcessUpdate(JediumBehaviourMessage message)
         {
             
-            Debug.Log("ENTERED");
+           
 
             if(Initialized)
             {

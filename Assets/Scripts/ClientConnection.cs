@@ -90,10 +90,14 @@ namespace JediumCore
             if (ownerId != _clientId && ownerId != Guid.Empty&&avatarId!=Guid.Empty)
                 namePrefab = nameNotOwnedPrefab;
             //
-            
-            
+
+            //TODO - address is obtainable here, but not the methods somehow. Maybe Protobuf?
+           // IGameObject sObj=Sender.Cast<GameObjectRef>();
 
 
+       
+
+            
             var obj = Test.Instance.AkkaSystem
                 .ActorOf(Props.Create(() => new ClientGameObject(localId, ownerId,_clientId,bundleId,avatarId, namePrefab, address, snap)),
                     localId.ToString()).Cast<GameObjectRef>();
@@ -104,7 +108,20 @@ namespace JediumCore
             _spawnedObjects.Add(localId, obj);
         }
 
+        
+
         #endregion
+
+        void IConnectionObserver.KillOwnedObjects(Guid clientId)
+        {
+            foreach (var obj in _spawnedObjects)
+            {
+                if (obj.Value.GetOwnerId().Result == clientId)
+                {
+                    obj.Value.DestroyObject().Wait();
+                }
+            }
+        }
 
         async Task IClientConnection.RegisterConnection(Guid clientID, string scene)
         {
@@ -112,9 +129,11 @@ namespace JediumCore
                 CreateObserver<IConnectionObserver>());
         }
 
-        async Task IClientConnection.KillConnection()
+        Task IClientConnection.KillConnection()
         {
-            Self.Tell(InterfacedPoisonPill.Instance);
+           Self.Tell(InterfacedPoisonPill.Instance);
+            //Self.GracefulStop()
+            return Task.FromResult(true);
         }
     }
 }

@@ -4,9 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Akka.Actor;
 using ClientUI;
 using Common.Logging;
 using Domain.BehaviourMessages;
+
 using Jedium.Behaviours;
 using Jedium.Behaviours.Shared;
 using Jedium.LocalBehaviours;
@@ -15,7 +17,7 @@ using UnityEngine;
 
 namespace JediumCore
 {
-    public partial class ClientGameObject : AbstractActor, IGameObject, IGameObjectObserver,IClientGameObject
+    public partial class ClientGameObject : InterfacedActor, IGameObject, IGameObjectObserver,IClientGameObject,IAbstractActor
     {
         //log
         private ILog _log = LogManager.GetLogger(typeof(ClientGameObject).ToString());
@@ -25,10 +27,12 @@ namespace JediumCore
 
         private ClientGameObjectUpdater _updater;
 
-        private IGameObject _serverGameObject;
 
+        private ClientConnectionHolderRef _serverConnection;
      
         private Guid _clientId;
+        private Guid _ownerId;
+        private Guid _localId;
 
         private string _prefab;
         private string _serverAddress;
@@ -42,9 +46,10 @@ namespace JediumCore
         //special
         private string _avatarProps;
 
+        private readonly TickMessage _tick = new TickMessage();
+      
         
-        public ClientGameObject(Guid localId, Guid ownerId,Guid clientId, Guid bundleId,Guid avatarId,string prefab, string address, ObjectSnapshot snap) : base(
-            localId, ownerId)
+        public ClientGameObject(Guid localId, Guid ownerId,Guid clientId, Guid bundleId,Guid avatarId,string prefab, string address, ObjectSnapshot snap) 
         {
             _prefab = prefab;
             _clientId = Test.Instance._clientId;
@@ -52,8 +57,18 @@ namespace JediumCore
             _bundleId = bundleId;
             _clientId = clientId;
             _avatarId = avatarId;
+            _serverAddress = address;
+            _ownerId = ownerId;
+            _localId = localId;
+          
+           
         
           _log.Info($"Spawning game object {localId}, prefab {prefab}, address {address}, bundle {_bundleId}");
+
+
+            //and start ticking
+            if(Test.Instance.MainSettings.UseUpdateThread)
+            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(0), TimeSpan.FromMilliseconds(Test.Instance.MainSettings.UpdateThreadInterval), Self, _tick, ActorRefs.NoSender);
 
 
             if (avatarId != Guid.Empty)
@@ -77,20 +92,21 @@ namespace JediumCore
 
 
         //REQUIRED - runs async code
-        async void SetupObject(string address)
+         void SetupObject(string address)
         {
            
       
           
-            GetAdressServer(address);
+       
       
             #region Агент обьекта: соединение с серверным обьектом
       
-            var asel = Context.ActorSelection(_serverAddress)
-                .ResolveOne(TimeSpan.Zero).Result;
-      
-      
-            _serverGameObject = asel.Cast<GameObjectRef>();
+           
+         var asel = Context.ActorSelection(_serverAddress)
+             .ResolveOne(TimeSpan.Zero).Result;
+        
+        IGameObject _serverGameObject = asel.Cast<GameObjectRef>();
+            
 
             _avatarProps = _serverGameObject.GetAvatarProps().Result;
             #endregion
@@ -98,18 +114,21 @@ namespace JediumCore
             //Клиент: Регистрация соединения с серверным объектом
             _serverGameObject.RegisterClient(Test.Instance._clientId, CreateObserver<IGameObjectObserver>()).Wait();
 
-            //Агент обьекта: спавн префаба
-            await SpawnPrefab();
+          
 
            
         }
+     
 
-        void GetAdressServer(string address)
+       async void IGameObjectObserver.GotAddress()
         {
-            string[] addr = address.Split('#');
-            _serverAddress = addr[0].Substring(1);
-            _serverAddress = _serverAddress.Replace("akka://VirtualFramework/",
-                "akka.tcp://VirtualFramework@localhost:18095/");
+            string address = Sender.Path.ToString();
+
+            var asel = Context.ActorSelection(address)
+                .ResolveOne(TimeSpan.Zero).Result;
+            _serverConnection = asel.Cast<ClientConnectionHolderRef>().WithRequestWaiter(this);
+
+            await SpawnPrefab();
         }
 
        
@@ -131,12 +150,8 @@ namespace JediumCore
                 
                 obj = GameObject.Instantiate(prot);
 
-              // obj.transform.position = new Vector3(_snapshot.X, _snapshot.Y, _snapshot.Z);
-              // obj.transform.rotation = new Quaternion(_snapshot.RotX, _snapshot.RotY, _snapshot.RotZ, _snapshot.RotW);
-              // obj.transform.localScale = new Vector3(_snapshot.ScaleX, _snapshot.ScaleY, _snapshot.ScaleZ);
-
-                //we need to add the updater here
-
+             
+              
                 _updater = obj.AddComponent<ClientGameObjectUpdater>();
                 _updater.SetParent(this);
                 // Создание Behaviours object - находимся в потоке Unity
@@ -145,25 +160,23 @@ namespace JediumCore
             else
             {
              
-               // Debug.Log("__FROM BUNDLE:"+_bundleId);
+              
                 await new WaitForEndOfFrame(); //Переходим в поток Unity
                
                 GameObject prot = await RootComponents.Instance.AssetLoader.GetWebAssetAsync<GameObject>(_prefab, _bundleId);
 
                
 
-              //  Debug.Log("__INSTANTIATE:" + _bundleId);
+             
                 obj = GameObject.Instantiate(prot);
-                //we need to add the updater here
 
-              // obj.transform.position = new Vector3(_snapshot.X, _snapshot.Y, _snapshot.Z);
-              // obj.transform.rotation = new Quaternion(_snapshot.RotX, _snapshot.RotY, _snapshot.RotZ, _snapshot.RotW);
-              // obj.transform.localScale = new Vector3(_snapshot.ScaleX, _snapshot.ScaleY, _snapshot.ScaleZ);
 
+
+              
                 _updater = obj.AddComponent<ClientGameObjectUpdater>();
                 _updater.SetParent(this);
                 // Создание Behaviours object - находимся в потоке Unity
-                AddBehaviourComponents(obj);
+               // await AddBehaviourComponents(obj);
 
                 
             }
@@ -172,7 +185,7 @@ namespace JediumCore
         /// <summary>
         /// Создание Behaviours object
         /// </summary>
-        void AddBehaviourComponents(GameObject pobj)
+       void AddBehaviourComponents(GameObject pobj)
         {
 
         //process already added components
@@ -225,8 +238,9 @@ namespace JediumCore
 
             //add context menu
             pobj.gameObject.AddComponent<MainGUIContextMenu>();
-            
 
+            
+           
         }
 
 
@@ -234,87 +248,117 @@ namespace JediumCore
 
         #region Implement IGameObject interface
 
-        async Task<Guid> IGameObject.GetBundleId()
+        Task IGameObject.TickBehaviours()
         {
-            return _bundleId;
+            return Task.FromResult(true);
         }
 
-        async Task<int> IGameObject.GetMessageCount()
+         Task<Guid> IGameObject.GetBundleId()
         {
-            return 0;
+            return Task.FromResult(_bundleId);
         }
 
-        async Task IGameObject.SaveToDB()
+         Task<int> IGameObject.GetMessageCount()
         {
-            
+            return Task.FromResult(0);
         }
 
-        async Task<string> IGameObject.GetNameOfPrefab()
+        Task IGameObject.SaveToDB()
         {
-            return "";
+            return Task.FromResult(false);
         }
 
-        async Task<Guid> IGameObject.GetAvatarId()
+         Task<string> IGameObject.GetNameOfPrefab()
         {
-            return _avatarId;
+            return Task.FromResult("");
         }
 
-        async Task<string> IGameObject.GetNameOfOthersPrefab()
+         Task<Guid> IGameObject.GetAvatarId()
         {
-            return "";
+            return Task.FromResult( _avatarId);
         }
 
-        async Task<ObjectSnapshot> IGameObject.GetSnapshot()
+        Task<string> IGameObject.GetNameOfOthersPrefab()
         {
-            return _snapshot;
+            return Task.FromResult("");
         }
 
-        async Task<string> IGameObject.GetServerAddress()
+         Task<ObjectSnapshot> IGameObject.GetSnapshot()
         {
-            return _serverAddress;
+            return Task.FromResult(_snapshot);
         }
 
-        async Task<string> IGameObject.GetAvatarProps()
+        Task<string> IGameObject.GetServerAddress()
         {
-            return "";
+            return Task.FromResult(_serverAddress);
         }
 
-        async Task IGameObject.SetAvatarProps(string props)
+        Task<string> IGameObject.GetAvatarProps()
         {
+            return Task.FromResult("");
+        }
 
+        Task IGameObject.SetAvatarProps(string props)
+        {
+            return Task.FromResult(false);
         }
      
 
         #region Агент обьекта цикл: отсылка изменений состояния на сервер
 
     
-        async Task IGameObject.SendBehaviourMessageToServer(Guid clientId, JediumBehaviourMessage message)
+        Task IGameObject.SendBehaviourMessageToServer(Guid clientId, JediumBehaviourMessage message)
         {
-            await _serverGameObject.SendBehaviourMessageToServer(clientId, message);
+            // _serverGameObject.SendBehaviourMessageToServer(clientId, message).Wait(100); //TODO - cancellation time?
+           // _serverConnection
+            return Task.FromResult(true);
         }
 
-        async Task IGameObject.SendBehaviourMessagePackToServer(Guid clientId, JediumBehaviourMessage[] messages)
+        Task IGameObject.SendBehaviourMessagePackToServer(Guid clientId, JediumBehaviourMessage[] messages)
         {
-            await _serverGameObject.SendBehaviourMessagePackToServer(clientId, messages);
+           // _serverGameObject.SendBehaviourMessagePackToServer(clientId, messages).Wait(100);
+
+          //  Debug.Log("___SENDING 2");
+          //  _serverConnection.CastToIActorRef().Tell(new BehaviourMessagePack()
+          //  {
+          //      Messages = messages
+          //  }, Self);//SendMessagePack(messages);
+            _serverConnection.WithNoReply().SendMessagePack(messages);
+            return Task.FromResult(true);
         }
 
 
         #endregion
 
 
-        async Task IGameObject.RegisterClient(Guid clientId, IGameObjectObserver client)
+        Task IGameObject.RegisterClient(Guid clientId, IGameObjectObserver client)
         {
             _log.Error(".RegisterClient() should not be called on client!");
+            return Task.FromResult(false);
         }
 
-        async Task IGameObject.UnregisterClient(Guid clientId)
+         Task IGameObject.UnregisterClient(Guid clientId)
         {
             _log.Error(".UnRegisterClient() should not be called on client!");
+            return Task.FromResult(false);
         }
 
-        async Task IGameObject.DestroyObject()
+     
+
+        Task IGameObject.DestroyObject()
         {
-            _log.Error("DestroyObject() should not be called on client!");
+          
+            if (Test.Instance._otherAvatars.ContainsKey(LocalId))
+            {
+                _log.Info($"User {LocalId} logged out");
+                Test.Instance._otherAvatars.Remove(LocalId);
+            }
+
+            UnityMainThreadDispatcher.Instance().Enqueue(() => { GameObject.DestroyImmediate(obj); });
+
+            Self.Tell(InterfacedPoisonPill.Instance, Self);
+
+            return Task.FromResult(true);
         }
 
         #endregion
@@ -337,6 +381,8 @@ namespace JediumCore
             AddReceivedMessagePack(messages);
         }
 
+        
+
         #endregion
 
 
@@ -358,5 +404,15 @@ namespace JediumCore
         }
 
         #endregion
+
+        Task<Guid> IAbstractActor.GetGuid()
+        {
+            return Task.FromResult(_localId);
+        }
+
+        Task<Guid> IAbstractActor.GetOwnerId()
+        {
+            return Task.FromResult(_ownerId);
+        }
     }
 }

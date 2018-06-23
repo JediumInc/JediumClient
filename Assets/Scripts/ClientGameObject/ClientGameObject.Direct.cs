@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace JediumCore
 {
-    public partial class ClientGameObject : AbstractActor, IGameObject, IGameObjectObserver, IClientGameObject
+    public partial class ClientGameObject : InterfacedActor, IGameObject, IGameObjectObserver, IClientGameObject,IAbstractActor
     {
         #region Direct access
 
@@ -19,28 +19,24 @@ namespace JediumCore
 
         public Guid GetIdDirect()
         {
-            return _localID;
+            return _localId;
         }
 
-      // public void SetGameObjectDirect(Guid clientId, JediumTransformSnapshot gameObject)
-      // {
-      //     var tt = _serverGameObject.SetTransform(clientId, gameObject);
-      //     tt.Wait();
-      // }
+    
 
         public Guid GetOwnerIdDirect()
         {
-            return _ownerID;
+            return _ownerId;
         }
 
         public Guid OwnerId
         {
-            get { return _ownerID; }
+            get { return _ownerId; }
         }
 
         public Guid LocalId
         {
-            get { return _localID; }
+            get { return _localId; }
         }
 
 
@@ -51,7 +47,7 @@ namespace JediumCore
             {
                 _log.Info($"Setting avatar props:{value}");
                 _avatarProps = value;
-                _serverGameObject.SetAvatarProps(_avatarProps).Wait();
+               // _serverGameObject.SetAvatarProps(_avatarProps).Wait();
             }
         }
 
