@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Blend;
 using Noesis;
+using UnityEngine;
 
 
 namespace ClientUI
@@ -25,15 +26,18 @@ namespace ClientUI
 
         private void InitializeComponent()
         {
-           Noesis.GUI.LoadComponent(this,"Assets/UI/MainUI/MainUI.xaml");
+
+
+             Noesis.GUI.LoadComponent(this,"Assets/Xaml/MainUI.xaml");
 
             _mainContextMenu = (Noesis.ContextMenu) FindName("MainContextMenu");
-            _mainContainer = (Grid) FindName("MainContainer");
+            _mainContainer = (Noesis.Grid) FindName("MainContainer");
         }
 
 
         public void ShowContextMenu(List<Tuple<string,string>> options)
         {
+          
             if (options != null && options.Count > 0)
             {
                 _mainContextMenu.Items.Clear();
@@ -44,7 +48,18 @@ namespace ClientUI
                 }
                 _mainContextMenu.Visibility = Visibility.Visible;
                 _mainContextMenu.IsOpen = true;
+           
             }
+            }
+
+        public void ShowNewUI(UserControl control)
+        {
+            _mainContainer.Children.Add(control);
+        }
+
+        public void RemoveUI(UserControl control)
+        {
+            _mainContainer.Children.Remove(control);
         }
 
         public void ShowLoginWindow(string login,string password)

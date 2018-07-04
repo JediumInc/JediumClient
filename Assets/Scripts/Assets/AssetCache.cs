@@ -24,16 +24,8 @@ namespace Jedium.Assets
 
             _fileDB=new SQLiteConnection(Path.Combine(Application.persistentDataPath, "cache","cache.db"));
 
-            //if(!_fileDB.)
 
-           // var info = _fileDB.GetTableInfo("AssetFiles");
-
-           //Debug.Log("___ASSET TABLE:"+info.Count);
-           // if (info.Count == 0)
-          //  {
-                //create table if not exists.
                 _fileDB.CreateTable<FileAsset>();
-           // }
            _fileDB.Close();
 
         }
@@ -73,15 +65,6 @@ namespace Jedium.Assets
         }
 
        
-
-     //  public static bool TableExists(String tableName, SQLiteConnection connection)
-     //  {
-     //      SQLiteCommand cmd =
-     //          connection.CreateCommand("SELECT * FROM sqlite_master WHERE type = 'table' AND name = @name",
-     //              tableName);
-     //    
-     //      return (cmd.ExecuteScalar<>());
-     //  }
     }
 
     public class FileAsset

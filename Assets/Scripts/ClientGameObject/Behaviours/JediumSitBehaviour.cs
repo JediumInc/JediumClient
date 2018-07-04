@@ -88,9 +88,12 @@ namespace Jedium.Behaviours
 
         private void OnSitted()
         {
+            if (person == Guid.Empty)
+            {
             Debug.Log("OnSitted message started");
             JediumSitMessage sitMes = new JediumSitMessage(Test.Instance._clientId, _parent.LocalId, true);
             _updater.AddUpdate(sitMes);
+            }
 
         }
 
@@ -152,14 +155,16 @@ namespace Jedium.Behaviours
 
                         Vector3 gameObjPos = this.transform.TransformPoint(AttachPoint);
 
+                        if (AvatarSit.GetComponent<Rigidbody>() != null)
+                        {
                         AvatarSit.GetComponent<Rigidbody>().isKinematic = true;
+                        }
 
                         LastPosition = AvatarSit.position;
 
                         AvatarSit.position = gameObjPos;
                         AvatarSit.rotation = AttachRotation;
                         PlaySitAnimation(IsOccupied);
-                      //  avatarSit.SetParent(this.transform);
                         
                     }
                 }
@@ -173,7 +178,13 @@ namespace Jedium.Behaviours
 
 
             AvatarSit.position = LastPosition;
+            if(AvatarSit.GetComponent<Rigidbody>()!=null)
+            {
             AvatarSit.GetComponent<Rigidbody>().isKinematic = false;
+            }
+
+            person = Guid.Empty;
+            
             PlaySitAnimation(IsOccupied);
             AvatarSit = null;
 

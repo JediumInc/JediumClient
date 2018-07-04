@@ -23,23 +23,9 @@ namespace Jedium.LocalBehaviours
         {
             base.Init(jgo);
 
-            // UnityMainThreadDispatcher.Instance().Enqueue(() => { StartCoroutine(GetAvatarProps()); });
-
-           
 
             Debug.Log("__GOT AVATAR PARAMS:" +_jediumGameObject.AvatarProps);
 
-       //    BasicAvatarProps bprops = new BasicAvatarProps()
-       //    {
-       //        MainColor = Color.red.FromColor(),
-       //        SecondaryColor = Color.gray.FromColor()
-       //    };
-       //    Debug.Log("_________SET PROPS 1");
-       //    string sprops = JsonConvert.SerializeObject(bprops);
-       //
-       //    Debug.Log("_________SET PROPS 2:"+sprops);
-       //
-       //    _jediumGameObject.AvatarProps = sprops;
 
             BasicAvatarProps avProps = JsonConvert.DeserializeObject<BasicAvatarProps>(_jediumGameObject.AvatarProps);
 
@@ -64,11 +50,13 @@ namespace Jedium.LocalBehaviours
 
         }
 
-        IEnumerator GetAvatarProps()
+       protected override void OnUpdate()
         {
-            yield return new WaitForSeconds(5);
            
         }
+
+
+       
 
 
     }

@@ -8,7 +8,7 @@ using Common.Logging;
 using Domain;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
+using DelegateCommandImpl;
 namespace JediumCore
 {
     public class ClientConnection : InterfacedActor, IClientConnection, IConnectionObserver

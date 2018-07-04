@@ -44,7 +44,7 @@ namespace JediumCore
 
         private bool allowQuit = false;
 
-        public string behavioursPath = @"..\BehaviourLoadTest";
+        private string behavioursPath = @"..\BehaviourLoadTest";
 
 
         //avatars
@@ -77,15 +77,15 @@ namespace JediumCore
 
             //load behaviours
 
-          //  if (Directory.Exists(Path.Combine(Application.dataPath,behavioursPath)))
-          //  {
-          //      BehaviourManager.LoadBehaviours(Path.Combine(Application.dataPath, behavioursPath));
-          //
-          //  }
-          //  else
-          //  {
-          //      _log.Info($"Path {Path.Combine(Application.dataPath, behavioursPath)} not exists, skipping assembly loading");
-          //  }
+            if (Directory.Exists(Path.Combine(Application.dataPath,behavioursPath)))
+            {
+                BehaviourManager.LoadBehaviours(Path.Combine(Application.dataPath, behavioursPath));
+          
+            }
+            else
+            {
+                _log.Info($"Path {Path.Combine(Application.dataPath, behavioursPath)} not exists, skipping assembly loading");
+            }
 
 
 
@@ -183,6 +183,8 @@ namespace JediumCore
                 MainServer = asel.Cast<ConnectionRef>();
 
                 Tuple<bool,string, ServerInfo> loginInfo = await MainServer.DoLogin(name,password);
+
+
 
                 if (!loginInfo.Item1)
                 {

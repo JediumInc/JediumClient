@@ -79,8 +79,6 @@ namespace Jedium.Behaviours
         public override bool ProcessUpdate(JediumBehaviourMessage message)
         {
             
-           
-
             if(Initialized)
             {
                 if (message == null)

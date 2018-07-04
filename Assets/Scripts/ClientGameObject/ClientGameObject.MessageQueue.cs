@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.Remoting.Messaging;
 using Akka.Interfaced;
+using DelegateCommandImpl;
 using Domain;
 using Domain.BehaviourMessages;
 

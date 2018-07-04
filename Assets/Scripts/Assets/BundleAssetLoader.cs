@@ -10,7 +10,8 @@ using Common.Logging;
 using Jedium.Utils;
 using JediumCore;
 using UnityEngine;
-
+using DelegateCommandImpl;
+using DotNetty.Common.Utilities;
 
 namespace Jedium.Assets
 {
@@ -20,9 +21,11 @@ namespace Jedium.Assets
 
         public Dictionary<Guid,AssetBundle> _loadedBundles;
 
-        //public string AssetsBaseUrl = "http://localhost:9080/api/assets/bundle/";
+        //public string AssetsBaseUrl = "http://expovirtual.ru:19080/api/assets/bundle/";
 
         private MD5 _md5;
+
+      
 
         public BundleAssetLoader()
         {
@@ -67,6 +70,16 @@ namespace Jedium.Assets
             hash = hash.Substring(1, hash.Length - 2);
             _log.Info("Bundle hash:" + hash);
 
+            int type = GetBundleType(id);
+
+            if (type == -1)
+            {
+                _log.Info($"Wrong bundle type for {id}");
+                return null;
+            }
+
+            if (type == 1)
+            {
             if (_loadedBundles.ContainsKey(id))
             {
 
@@ -119,20 +132,43 @@ namespace Jedium.Assets
 
                 return ret;
             }
+            }
+            else
+            {
+                _log.Info($"TODO: unsupported bundle type {type}");
+                return null;
+            }
+        }
 
-          }
+
+     
+
+
+
+           
+
 
 
 
         public async Task<T> GetWebAssetAsync<T>(string name, Guid id) where T : UnityEngine.Object
         {
 
-            _log.Info($"Loading asset syncronously:{name},{id}");
+            _log.Info($"Loading asset asyncronously:{name},{id}");
 
             string hash = GetBundleHash(id);
             hash = hash.Substring(1, hash.Length - 2);
             _log.Info("Bundle hash:" + hash);
 
+            int type = GetBundleType(id);
+
+            if (type == -1)
+            {
+                _log.Info($"Wrong bundle type for {id}");
+                return null;
+            }
+
+            if (type == 1)
+            {
             if (_loadedBundles.ContainsKey(id))
             {
 
@@ -166,7 +202,8 @@ namespace Jedium.Assets
             else
             {
                 byte[] bbytes =
-                  await  GetURLContentsAsync(Test.Instance.MainSettings.WebApiUrl + "assets/bundle/" + id.ToString());
+                        await GetURLContentsAsync(Test.Instance.MainSettings.WebApiUrl + "assets/bundle/" +
+                                                  id.ToString());
                 // Debug.Log("__DOWNLOADED"+bbytes.Length);
                 _log.Info("Bundle obtained");
 
@@ -185,6 +222,12 @@ namespace Jedium.Assets
 
                 return ret;
             }
+            }
+            else
+            {
+                _log.Info($"TODO: unsupported bundle type {type}");
+                return null;
+            }
 
         }
 
@@ -195,6 +238,18 @@ namespace Jedium.Assets
 
             string ret = Encoding.Default.GetString(bbytes);
             return ret;
+        }
+
+        public int GetBundleType(Guid bundleId)
+        {
+            byte[] bbytes =
+                GetURLContents(Test.Instance.MainSettings.WebApiUrl + "assets/bundletype/" + bundleId.ToString());
+
+            string ret = Encoding.Default.GetString(bbytes);
+
+            int iret = -1;
+            int.TryParse(ret, out iret);
+            return iret;
         }
 
 

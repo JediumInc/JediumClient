@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using ClientUI;
 using Common.Logging;
+using DelegateCommandImpl;
 using Domain.BehaviourMessages;
 
 using Jedium.Behaviours;
@@ -177,6 +178,7 @@ namespace JediumCore
                 _updater.SetParent(this);
                 // Создание Behaviours object - находимся в потоке Unity
                // await AddBehaviourComponents(obj);
+                AddBehaviourComponents(obj);
 
                 
             }
@@ -251,6 +253,12 @@ namespace JediumCore
         Task IGameObject.TickBehaviours()
         {
             return Task.FromResult(true);
+        }
+
+        //editor-related
+        public Task SetBehaviourSnapshot(JediumBehaviourSnapshot snapshot)
+        {
+            return Task.FromResult(false);
         }
 
          Task<Guid> IGameObject.GetBundleId()

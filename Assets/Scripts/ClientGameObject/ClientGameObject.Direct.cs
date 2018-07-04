@@ -29,6 +29,16 @@ namespace JediumCore
             return _ownerId;
         }
 
+        public Task<string> GetAvatarProps()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SetAvatarProps(string props)
+        {
+            throw new NotImplementedException();
+        }
+
         public Guid OwnerId
         {
             get { return _ownerId; }

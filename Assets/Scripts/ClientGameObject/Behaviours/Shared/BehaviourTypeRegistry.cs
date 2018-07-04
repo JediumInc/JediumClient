@@ -15,7 +15,9 @@ namespace Jedium.Behaviours.Shared
            {"Touch", typeof(JediumTouchBehaviour)},
            {"CharacterController", typeof(JediumCharacterController)},
            {"Take", typeof(JediumTakeBehaviour) },
-           {"Sit", typeof(JediumSitBehaviour) }
+           {"Sit", typeof(JediumSitBehaviour) },
+           {"UI",typeof(JediumUIBehaviour) }
+           
        };
         public static Dictionary<string, Type> RegisteredSnapshotTypes = new Dictionary<string, Type>();
     }

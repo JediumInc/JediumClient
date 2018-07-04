@@ -1,17 +1,15 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Domain;
+using Jedium.LocalBehaviours;
 using JediumCore;
 using UnityEngine;
 
-namespace Jedium.LocalBehaviours
-{
    public abstract class JediumLocalBehaviour:MonoBehaviour
    {
-       public bool Initialized = false;
+    [SerializeField]
+    protected bool Initialized = false;
+
+    public bool RunUpdateUninitialized = false;
 
        protected ClientGameObject _jediumGameObject;
 
@@ -20,6 +18,30 @@ namespace Jedium.LocalBehaviours
            _jediumGameObject = jgo;
            Initialized = true;
        }
+
+    protected virtual void Awake()
+    {
+        //empty - moved to init
+    }
+    protected virtual void Start()
+    {
+        //empty - moved to init
+    }
+
+    protected virtual void Update()
+    {
+        if (RunUpdateUninitialized)
+        {
+            OnUpdate();
+        }
+        else if (Initialized)
+        {
+            OnUpdate();
+        }
+    }
+
+    protected virtual void OnUpdate()
+    {
 
    }
 }
